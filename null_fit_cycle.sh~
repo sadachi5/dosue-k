@@ -1,0 +1,16 @@
+#!/bin/bash
+
+for i in {180..263}; do
+    int=$((i / 10))
+    shousu=$((i % 10))
+
+    for j in {0..399}; do
+	num=$((j % 10))
+	if [ ${num} -eq 9 ]; then
+	    python3 -u null_fit.py ${int}.${shousu} ${j} 2>&1>&/data/ms2840a/result_data/null_log/log_${int}.${shousu}GHz.out
+	else
+	    python3 -u null_fit.py ${int}.${shousu} ${j} 2>&1>&/data/ms2840a/result_data/null_log/log_${int}.${shousu}GHz.out &
+	fi
+    done
+
+done

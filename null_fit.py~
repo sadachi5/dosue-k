@@ -1,0 +1,169 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import function as func
+import csv
+import math
+import itertools
+from scipy import special
+import lmfit
+import sys
+import datetime
+import os
+
+# Constants
+v_c = 220.e+3 # [m/sec] speed of solar system
+v_E = v_c # [m/sec] speed of earth
+c = 299792458. # [m/sec] speed of light from wikipedia
+k_B = 1.380649e-23 # [J/K] boltzmann constant
+rbw = 3.e+2 # [Hz]
+binwidth = 2.e+3 # [Hz]
+T_LN2 = 77 # [K]
+
+def cummulative_velocity(v):
+    C = v_c/(2.*np.sqrt(np.pi)*v_E) 
+    exp_p = np.exp( -1. * np.power((v+v_E)/v_c, 2.) )
+    exp_m = np.exp( -1. * np.power((v-v_E)/v_c, 2.) )
+    erf_p = special.erf((v+v_E)/v_c)
+    erf_m = special.erf((v-v_E)/v_c)
+
+    f = C*(exp_p-exp_m) + 1./2. * (erf_p + erf_m)
+    return f
+
+def freq_to_velocity(freq, freq_0):
+    ok = (freq>freq_0)
+    v  = np.full(len(freq), 0.)
+    v[ok] = c * np.sqrt( 1. - np.power(freq_0/freq[ok], 2.))
+    return v
+
+def integral_binwidth_velocity(freq, freq_0, binwidth):
+    v_p = freq_to_velocity(freq+binwidth/2., freq_0)
+    v_m = freq_to_velocity(freq-binwidth/2., freq_0)
+    integral = cummulative_velocity(v_p) - cummulative_velocity(v_m)
+    return integral
+
+def fit_func(freq, a, b, P, freq_0):
+    integral = integral_binwidth_velocity(freq, freq_0, binwidth)
+    peak = P * integral
+    power = peak + a*(freq-freq_0) + b
+    return power
+
+def residual(params, fit_freq, fit_Psig, yerr, freq_0):
+    a = params['a']
+    b = params['b']
+    P = params['P']
+    y_model = fit_func(fit_freq, a, b, P, freq_0)
+    chi = (fit_Psig - y_model)/yerr
+    o = np.isfinite(chi)
+    return chi[o]
+
+def make_combination():
+    result = []
+    for num in range(2, 14, 2):
+        t_list = list(itertools.combinations(range(12), num))
+        for t in t_list:
+            s_list = list(itertools.combinations(range(num), int(num/2)))
+            for s in s_list:
+                r = list(range(0,num))
+                for cut in range(int(num/2)):
+                    r.remove(s[cut])
+                if 0 in r: continue
+                result.append([[t[s[x]] for x in range(int(num/2))], [t[r[x]] for x in range(int(num/2))]])
+            
+    return result
+
+def null_fit(num, start, freq, null):
+    with open("/data/ms2840a/result_data/null_sample_fit/start_{}GHz_{}.csv".format(start, num), "w") as f:
+        writer = csv.writer(f)
+        writer.writerow(["freq_0", "a", "b", "P", "a_err", "b_err", "P_err", "Nvarys", "Ndata", "Nfree", "chisqr", "redchi", "success"])
+
+    params = lmfit.Parameters()
+    params.add('a', value=1.)
+    params.add('b', value=1.)
+    params.add('P', value=1.)
+
+    start_col = (int(float(start) * 1.e+6 + 250. - start_freq * 1.e+6) // 2000) * 2.e+6
+    step_points = int(2.e+6/binwidth)
+    for step in range(step_points - 1):
+        freq_0 = start_freq * 1.e+9 + start_col + step * binwidth
+
+        fit_freq = []
+        fit_Psig = []
+        for v, p in zip(freq, null):
+            if v >= freq_0 - 60.e+3 and v <= freq_0 + 180.e+3:
+                fit_freq.append(v)
+                fit_Psig.append(p)
+
+        fit_freq = np.array(fit_freq)
+        fit_Psig = np.array(fit_Psig)
+        Perr = np.std(fit_Psig)
+
+        result = lmfit.minimize(residual, params, args=(fit_freq, fit_Psig, Perr, freq_0))
+        with open("/data/ms2840a/result_data/null_sample_fit/start_{}GHz_{}.csv".format(start, num), "a") as f:
+            writer = csv.writer(f)
+            a = result.params["a"].value
+            b = result.params["b"].value
+            P = result.params["P"].value
+            a_err = result.params["a"].stderr
+            b_err = result.params["b"].stderr
+            P_err = result.params["P"].stderr
+            Nvarys = result.nvarys
+            Ndata = result.ndata
+            Nfree = result.nfree
+            chisqr = result.chisqr
+            redchi = result.redchi
+            success = result.success
+            writer.writerow([freq_0, a, b, P, a_err, b_err, P_err, Nvarys, Ndata, Nfree, chisqr, redchi, success])
+
+
+if __name__ == "__main__":
+    start_freq = float(sys.argv[1]) # 18.0, 18.1, 18.2, ... , 26.3
+    num = int(sys.argv[2]) # combination number
+    initial = int(start_freq * 1.e+6 - 250) # 18.0 GHz - 250 kHz
+    final = int(initial + 1.e+5) # 18.0 GHz + 100 MHz - 250 kHz
+
+    combination = make_combination()
+    
+    for i in range(initial, final, 20000): 
+        # フィットする2.0 MHzの幅　
+        # 2000だと 2.0 MHz 50回で 100 MHz 隙間なくフィット　
+        # 20000だと 2.0 MHz 5回で 100 MHz を 10分の1だけフィット
+        word = list(str(i))
+        word.insert(2, ".")
+        start = "".join(word)
+
+        path = "/data/ms2840a/result_data/signal_12_data/start_{}GHz.csv".format(start)
+        signal = func.csv_to_array(path)
+        freq = signal["freq"]
+
+        out_path = "/data/ms2840a/result_data/null_sample_fit/start_{}GHz_{}.csv".format(start, num)
+        if os.path.exists(out_path):
+            print("arleady fit : " + str(start) + " GHz, num = " + str(j))
+            print("")
+            continue
+            
+        null = np.zeros(len(freq))
+        for a in combination[num][0]:
+            null += signal["W_" + str(a)]
+        for b in combination[num][1]:
+            null -= signal["W_" + str(b)]
+
+        dt_now = datetime.datetime.now()
+        print("fitting start : " + dt_now.strftime("%Y-%m-%d %H:%M:%S"))
+        print("fit frequency = " + str(start) + " GHz")
+        print("null number = " + str(j))
+
+        null_fit(num, start, freq, null)
+                
+        dt_now = datetime.datetime.now()
+        print("fitting finished : " + dt_now.strftime("%Y-%m-%d %H:%M:%S"))
+        print("")
+
+    # やること
+    # 2MHzリビンのy-factorを走らせる
+    # 12個分のsignal dataを走らせる
+    # このスクリプトが一つ走ることを確認
+    # 図も描いてみる
+    # 走らせる
+
+
+        
