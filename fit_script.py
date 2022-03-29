@@ -75,9 +75,11 @@ def fitting(path, start, start_freq, freq, signal):
     params.add('P', value=1.)
 
     start_col = (int(float(start) * 1.e+6 + 250. - start_freq * 1.e+6) // 2000) * 2.e+6
+    print(f'start_col = {start_col}')
     step_points = int(2.e+6/binwidth)
     for step in range(step_points):
         freq_0 = start_freq * 1.e+9 + start_col + step * binwidth
+        #print(f'freq_0 = {freq_0}')
 
         fit_freq = []
         fit_Psig = []

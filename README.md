@@ -143,9 +143,10 @@ yfactor\_plot.ipynb
  2. get\_original\_signal.ipynb
 	- input信号強度の推定
 	- P\_in を求める (Trx を引いて、G で割る)
- 4. peak\_serch.ipynb
+ 4. peak\_search.ipynb
 	- input信号(追加測定を含む)をフィッティング
  5. quick\_plot.ipynb 
+	- [10行目] fit result をプロット (P\_DP と p\_local)
 	- [6行目] fit result から upper limit on P\_DP と upper limit on χ (syst. uncertainties含む) を計算
  6. limit\_plot.ipynb
 	- quick\_plot の output data からリミットの図をプロット
