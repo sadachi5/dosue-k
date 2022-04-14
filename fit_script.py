@@ -49,36 +49,44 @@ def residual(params, fit_freq, fit_Psig, yerr, freq_0):
     o = np.isfinite(chi)
     return chi[o]
 
-def fitting(path, start, start_freq, freq, signal):
+def fitting(path, start, start_freq, freq, signal, dfreq_0=0):
+    # path       is a file name for saving the fit reuslt. If it is '', no result will be saved.
     # freq       is frequency array
     # signal     is spectrum array
-    # start      is base frequency such as 18.0, 18.1, 18.2, ... 100 MHz range
-    # start_freq is base fit frequency such as 17.999750, 18.001750, ... 2 MHz range
-    
-    with open(path, "w") as f:
-        writer = csv.writer(f)
-        writer.writerow([
-            "freq_0", 
-            "a", 
-            "b", 
-            "P", 
-            "a_err", 
-            "b_err", 
-            "P_err", 
-            "redchi", 
-            "success"
-        ])
+    # start        is base fit frequency such as 17.999750, 18.001750, ... 2 MHz range
+    # start_freq is base frequency such as 18.0, 18.1, 18.2, ... 100 MHz range   
+    # dfreq_0 is variation on the peak frequency of freq_0 [Hz]
+
+    if len(path) > 0:
+        print('path=', path)
+        with open(path, "w") as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                "freq_0", 
+                "a", 
+                "b", 
+                "P", 
+                "a_err", 
+                "b_err", 
+                "P_err", 
+                "redchi", 
+                "success"
+            ])
+            pass
+        pass
 
     params = lmfit.Parameters()
     params.add('a', value=1.)
     params.add('b', value=1.)
     params.add('P', value=1.)
 
-    start_col = (int(float(start) * 1.e+6 + 250. - start_freq * 1.e+6) // 2000) * 2.e+6
+    start_col = (int(float(start) * 1.e+6 + 250. - start_freq * 1.e+6) // 2000) * 2000 * 1.e+3
+    # 1e+3: kHz --> Hz
     print(f'start_col = {start_col}')
     step_points = int(2.e+6/binwidth)
+    result_list = {'a':[], 'b':[], 'P':[], 'a_err':[], 'b_err':[], 'P_err':[], 'freq_0':[], 'redchi':[], 'success':[]}
     for step in range(step_points):
-        freq_0 = start_freq * 1.e+9 + start_col + step * binwidth
+        freq_0 = start_freq * 1.e+9 + start_col + step * binwidth + dfreq_0
         #print(f'freq_0 = {freq_0}')
 
         fit_freq = []
@@ -100,16 +108,30 @@ def fitting(path, start, start_freq, freq, signal):
 
         result = lmfit.minimize(residual, params, args=(fit_freq, fit_Psig, Perr, freq_0))
         
-        with open(path, "a") as f:
-            writer = csv.writer(f)
-            writer.writerow([
-                freq_0, 
-                result.params["a"].value, 
-                result.params["b"].value, 
-                result.params["P"].value, 
-                result.params["a"].stderr,  
-                result.params["b"].stderr, 
-                result.params["P"].stderr, 
-                result.redchi, 
-                result.success
-            ])
+        if len(path) > 0:
+            with open(path, "a") as f:
+                writer = csv.writer(f)
+                writer.writerow([
+                    freq_0, 
+                    result.params["a"].value, 
+                    result.params["b"].value, 
+                    result.params["P"].value, 
+                    result.params["a"].stderr,  
+                    result.params["b"].stderr, 
+                    result.params["P"].stderr, 
+                    result.redchi, 
+                    result.success
+                ])
+                pass
+            pass
+        result_list['freq_0'].append(freq_0)
+        result_list['a'].append(result.params["a"].value) 
+        result_list['b'].append(result.params["b"].value) 
+        result_list['P'].append(result.params["P"].value)
+        result_list['a_err'].append(result.params["a"].stderr)  
+        result_list['b_err'].append(result.params["b"].stderr)
+        result_list['P_err'].append(result.params["P"].stderr)
+        result_list['redchi'].append(result.redchi)
+        result_list['success'].append(result.success)
+        pass
+    return result_list

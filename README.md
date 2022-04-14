@@ -118,6 +118,7 @@ xy\_scan.ipynb
 アクチュエータを使ったAeff推定
 x方向、y方向の信号強度のカラーマップ
 x、yそれぞれの中心でスライスした図
+Paper に載せる beam width の図
 
 yfactor\_analysis.ipynb
 ----------------
@@ -141,13 +142,22 @@ yfactor\_plot.ipynb
  1. yfactor\_analysis.ipynb
 	ゲイン、ノイズの推定
  2. get\_original\_signal.ipynb
+	(今は追加測定のみになっている)
 	- input信号強度の推定
 	- P\_in を求める (Trx を引いて、G で割る)
  4. peak\_search.ipynb
+	(今は追加測定のみになっている)
 	- input信号(追加測定を含む)をフィッティング
+ 5. beam width 関係の見積もり
+ 	1. Aeff\_analysis.ipynb
+		- Aeff, eta_win の simulation からの見積もり
+ 	2. xy\_scan.ipynb
+		- xy scan による beam width の measurement と simulation の比較
+          	と beam width の誤差の見積もり
  5. quick\_plot.ipynb 
 	- [10行目] fit result をプロット (P\_DP と p\_local)
 	- [6行目] fit result から upper limit on P\_DP と upper limit on χ (syst. uncertainties含む) を計算
+	- 全周波数領域の P\_DP, P\_out などのプロット
  6. limit\_plot.ipynb
 	- quick\_plot の output data からリミットの図をプロット
 
