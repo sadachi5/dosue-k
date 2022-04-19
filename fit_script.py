@@ -58,7 +58,7 @@ def fitting(path, start, start_freq, freq, signal, dfreq_0=0):
     # dfreq_0 is variation on the peak frequency of freq_0 [Hz]
 
     if len(path) > 0:
-        print('path=', path)
+        #print('path=', path)
         with open(path, "w") as f:
             writer = csv.writer(f)
             writer.writerow([
@@ -82,7 +82,7 @@ def fitting(path, start, start_freq, freq, signal, dfreq_0=0):
 
     start_col = (int(float(start) * 1.e+6 + 250. - start_freq * 1.e+6) // 2000) * 2000 * 1.e+3
     # 1e+3: kHz --> Hz
-    print(f'start_col = {start_col}')
+    #print(f'start_col = {start_col}')
     step_points = int(2.e+6/binwidth)
     result_list = {'a':[], 'b':[], 'P':[], 'a_err':[], 'b_err':[], 'P_err':[], 'freq_0':[], 'redchi':[], 'success':[]}
     for step in range(step_points):

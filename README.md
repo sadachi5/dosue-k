@@ -29,7 +29,7 @@ get\_N\_eff.ipynb
 Neffの推定
 ヌルサンプルのP/ΔPのヒストグラをプロット
 ヌルサンプルのp\_localヒストグラムをプロット
-実データのp\_local
+実データのp\_localをプロット
 p\_local<10^-5 の領域のフィット結果の図示
 p\_local\_minの追加測定前後の比較（paperのFIG.3）
 
@@ -44,6 +44,7 @@ get\_original\_signal.ipynb
 get\_p\_local\_hide.py
 ----------------
 p\_localの計算を裏で走らせていたスクリプト
+実データのフィット結果から p\_local を計算する
 
 limit\_plot.ipynb
 ----------------
