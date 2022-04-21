@@ -49,13 +49,26 @@ def residual(params, fit_freq, fit_Psig, yerr, freq_0):
     o = np.isfinite(chi)
     return chi[o]
 
-def fitting(path, start, start_freq, freq, signal, dfreq_0=0):
+def checkNone(var):
+    '''
+        return '' if var is None or nan.
+        This is for writing csv file.
+    '''
+    if var is None or np.isnan(var):
+        return ''
+    else:
+        return var
+
+def fitting(path, start, start_freq, freq, signal, dfreq_0=0, init_values=[1., 1., 1.], verbose=0):
     # path       is a file name for saving the fit reuslt. If it is '', no result will be saved.
     # freq       is frequency array
     # signal     is spectrum array
     # start        is base fit frequency such as 17.999750, 18.001750, ... 2 MHz range
     # start_freq is base frequency such as 18.0, 18.1, 18.2, ... 100 MHz range   
     # dfreq_0 is variation on the peak frequency of freq_0 [Hz]
+    dfreq_0 = (float)(dfreq_0)
+    start = (float)(start)
+    start_freq = (float)(start_freq)
 
     if len(path) > 0:
         #print('path=', path)
@@ -76,36 +89,69 @@ def fitting(path, start, start_freq, freq, signal, dfreq_0=0):
         pass
 
     params = lmfit.Parameters()
-    params.add('a', value=1.)
-    params.add('b', value=1.)
-    params.add('P', value=1.)
 
-    start_col = (int(float(start) * 1.e+6 + 250. - start_freq * 1.e+6) // 2000) * 2000 * 1.e+3
+    start_col = (int(float(start) * 1.e+6 + 250. - float(start_freq) * 1.e+6) // 2000) * 2000. * 1.e+3
     # 1e+3: kHz --> Hz
-    #print(f'start_col = {start_col}')
+    if verbose > 0: print(f'start_col = {start_col}')
     step_points = int(2.e+6/binwidth)
     result_list = {'a':[], 'b':[], 'P':[], 'a_err':[], 'b_err':[], 'P_err':[], 'freq_0':[], 'redchi':[], 'success':[]}
     for step in range(step_points):
+        if verbose > 0: 
+            print(f'start_freq = {start_freq}')
+            print(f'start_col = {start_col}')
+            print(f'step = {step}')
+            print(f'binwidth = {binwidth}')
+            print(f'dfreq_0 = {dfreq_0}')
+            pass
         freq_0 = start_freq * 1.e+9 + start_col + step * binwidth + dfreq_0
-        #print(f'freq_0 = {freq_0}')
+        if verbose > 0:
+            print(f'freq_0 = {freq_0}')
+            pass
 
         fit_freq = []
         fit_Psig = []
         fit_left = []
         fit_right = []
         for _f, _s in zip(freq, signal):
+            if verbose > 1:
+                print(f'_f = {_f}')
+                pass
             if _f >= freq_0 - 50.e+3 and _f <= freq_0 + 200.e+3:
                 fit_freq.append(_f)
                 fit_Psig.append(_s)
+                pass
             if _f >= freq_0 - 300.e+3 and _f <= freq_0 - 50.e+3:
                 fit_left.append(_s)
+                pass
             if _f >= freq_0 + 200.e+3 and _f <= freq_0 + 450.e+3:
                 fit_right.append(_s)
+                pass
+            pass
 
         fit_freq = np.array(fit_freq)
         fit_Psig = np.array(fit_Psig)
         Perr = (np.std(np.array(fit_left)) + np.std(np.array(fit_right)))/2
 
+        if init_values is None:
+            # 1st fit: P=0
+            params.add('a', value=0., vary=True)
+            params.add('b', value=np.mean(fit_Psig), vary=True)
+            params.add('P', value=0., vary=False)
+            result = lmfit.minimize(residual, params, args=(fit_freq, fit_Psig, Perr, freq_0))
+            # 2nd fit: a, b fixed to 1st result
+            params['a'].set(value = result.params['a'].value, vary=False)
+            params['b'].set(value = result.params['b'].value, vary=False)
+            params['P'].set(value = 0., vary=True)
+            result = lmfit.minimize(residual, params, args=(fit_freq, fit_Psig, Perr, freq_0))
+            # 3rd fit: all parameters vary
+            params['a'].set(value = result.params['a'].value, vary=True)
+            params['b'].set(value = result.params['b'].value, vary=True)
+            params['P'].set(value = result.params['P'].value, vary=True)
+        else:
+            params.add('a', value=init_values[0])
+            params.add('b', value=init_values[1])
+            params.add('P', value=init_values[2])
+            pass
         result = lmfit.minimize(residual, params, args=(fit_freq, fit_Psig, Perr, freq_0))
         
         if len(path) > 0:
@@ -113,13 +159,13 @@ def fitting(path, start, start_freq, freq, signal, dfreq_0=0):
                 writer = csv.writer(f)
                 writer.writerow([
                     freq_0, 
-                    result.params["a"].value, 
-                    result.params["b"].value, 
-                    result.params["P"].value, 
-                    result.params["a"].stderr,  
-                    result.params["b"].stderr, 
-                    result.params["P"].stderr, 
-                    result.redchi, 
+                    checkNone(result.params["a"].value), 
+                    checkNone(result.params["b"].value), 
+                    checkNone(result.params["P"].value), 
+                    checkNone(result.params["a"].stderr),  
+                    checkNone(result.params["b"].stderr), 
+                    checkNone(result.params["P"].stderr), 
+                    checkNone(result.redchi), 
                     result.success
                 ])
                 pass

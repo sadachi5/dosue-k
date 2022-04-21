@@ -241,4 +241,86 @@ def any_rebin_func(freq, data, rebin):
 
     return np.array(rebin_freq), np.array(rebin_data), np.array(rebin_data_std)
 
+def listup_low_plocal(freq, p_local, lowP = 1.e-5):
+    freq_lowP = []
+    p_local_lowP = []
+    for i, p in enumerate(p_local):
+        if p < lowP:
+            freq_lowP.append(freq[i])
+            p_local_lowP.append(p)
+            print(
+                str(freq[i]/1e9) + " & " + 
+                str(round(p*1e6,2))
+                )
+            pass
+        pass
+    print(f'# of fit with p_local<1e-5 = {len(freq_lowP)}')
+    print()
+    
+    # Remove adjacent results
+    print('###############################################')
+    print('Remove adjacent results')
+    diff_freq_lowP = np.diff(freq_lowP)
+    close_lowP = (diff_freq_lowP < 2.1e+3) # Hz
+    _plocal_close = []
+    _index_close = []
+    remove_index = []
+    for i, isclose in enumerate(close_lowP):
+        if isclose:
+            _plocal_close.append(p_local_lowP[i])
+            _index_close.append(i)
+        else:
+            if len(_plocal_close)>0:
+                # check lowest p_local
+                _plocal_close.append(p_local_lowP[i])
+                _index_close.append(i)
+                _plocal_min = min(_plocal_close)
+                _index_min = _index_close[_plocal_close.index(_plocal_min)]
+                # append removing index datas
+                for _ind in _index_close:
+                    if _ind != _index_min:
+                        remove_index.append(_ind)
+                        pass
+                # clear 
+                _plocal_close = []
+                _index_close = []
+                pass
+            pass
+        pass
+    
+    i = len(close_lowP)
+    if len(_plocal_close)>0:
+        # check lowest p_local
+        _plocal_close.append(p_local_lowP[i])
+        _index_close.append(i)
+        _plocal_min = min(_plocal_close)
+        _index_min = _index_close[_plocal_close.index(_plocal_min)]
+        # append removing index datas
+        for _ind in _index_close:
+            if _ind != _index_min:
+                remove_index.append(_ind)
+                pass
+            pass
+        pass
+    
+    freq_lowP = [ f for i, f in enumerate(freq_lowP) if i not in remove_index ]
+    p_local_lowP = [ f for i, f in enumerate(p_local_lowP) if i not in remove_index ]
+    
+    # print
+    for i in range(len(freq_lowP)):
+        print(
+            str(freq_lowP[i]/1e9) + " & " + 
+            str(round(p_local_lowP[i]*1e6,2))
+            )
+        pass
+            
+    
+    freq_lowP = np.array(freq_lowP)
+    p_local_lowP = np.array(p_local_lowP)
+    print(f'# of fit with p_local<1e-5 = {len(freq_lowP)}')
 
+    return freq_lowP, p_local_lowP
+
+def isNoneAny_array(array):
+    isNone = [ _x is None for _x in array ]
+    return np.any(isNone)

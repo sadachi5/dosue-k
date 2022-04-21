@@ -71,6 +71,9 @@ null\_fit.py
 peak\_serch.ipynb
 ----------------
 inputデータのフィッティング
+--> 時間がかかるので peak\_search.py を作成して、 
+    peak\_search.sh で 1GHz ずつ job を作って
+    並列で計算することにした。
 
 plot\_temperature.ipynb
 ----------------
