@@ -59,6 +59,39 @@ def checkNone(var):
     else:
         return var
 
+def get_fit_array(freq, signal, freq_0):
+    '''
+        Arguments:
+            freq: fequency array [Hz]
+            signal: data to fit (P_in) [W]
+            freq_0: fit peak frequency [Hz]
+        Return: fit_freq, fit_Psig, Perr
+            fit_freq: array of frequency
+            fit_Psig: array of signal (P_in)
+            Perr: value of statistical error on signal (P_in)
+    '''
+    fit_Psig = []
+    fit_freq = []
+    fit_left = []
+    fit_right = []
+    for _f, _s in zip(freq, signal):
+        if _f >= freq_0 - 50.e+3 and _f <= freq_0 + 200.e+3:
+            fit_freq.append(_f)
+            fit_Psig.append(_s)
+            pass
+        if _f >= freq_0 - 300.e+3 and _f <= freq_0 - 50.e+3:
+            fit_left.append(_s)
+            pass
+        if _f >= freq_0 + 200.e+3 and _f <= freq_0 + 450.e+3:
+            fit_right.append(_s)
+            pass
+        pass
+    fit_freq = np.array(fit_freq)
+    fit_Psig = np.array(fit_Psig)
+    Perr = (np.std(np.array(fit_left)) + np.std(np.array(fit_right)))/2
+    return fit_freq, fit_Psig, Perr
+
+
 def fitting(path, start, start_freq, freq, signal, dfreq_0=0, init_values=[1., 1., 1.], verbose=0):
     # path       is a file name for saving the fit reuslt. If it is '', no result will be saved.
     # freq       is frequency array
@@ -108,6 +141,8 @@ def fitting(path, start, start_freq, freq, signal, dfreq_0=0, init_values=[1., 1
             print(f'freq_0 = {freq_0}')
             pass
 
+        fit_freq, fit_Psig, Perr = get_fit_array(freq, signal, freq_0)
+        '''
         fit_freq = []
         fit_Psig = []
         fit_left = []
@@ -131,6 +166,7 @@ def fitting(path, start, start_freq, freq, signal, dfreq_0=0, init_values=[1., 1
         fit_freq = np.array(fit_freq)
         fit_Psig = np.array(fit_Psig)
         Perr = (np.std(np.array(fit_left)) + np.std(np.array(fit_right)))/2
+        '''
 
         if init_values is None:
             # 1st fit: P=0
@@ -153,6 +189,16 @@ def fitting(path, start, start_freq, freq, signal, dfreq_0=0, init_values=[1., 1
             params.add('P', value=init_values[2])
             pass
         result = lmfit.minimize(residual, params, args=(fit_freq, fit_Psig, Perr, freq_0))
+        if init_values is None and result.params['P'].stderr is None:
+            print( 'WARNING! P has None error! --> retry fit')
+            print(f'         a --> {result.params["a"].value}')
+            print(f'         b --> {result.params["b"].value}')
+            print(f'         P --> 1.0')
+            params['a'].set(value = result.params['a'].value, vary=True)
+            params['b'].set(value = result.params['b'].value, vary=True)
+            params['P'].set(value = 1., vary=True)
+            result = lmfit.minimize(residual, params, args=(fit_freq, fit_Psig, Perr, freq_0))
+            pass
         
         if len(path) > 0:
             with open(path, "a") as f:
@@ -179,5 +225,11 @@ def fitting(path, start, start_freq, freq, signal, dfreq_0=0, init_values=[1., 1
         result_list['P_err'].append(result.params["P"].stderr)
         result_list['redchi'].append(result.redchi)
         result_list['success'].append(result.success)
+        pass
+        
+
+    keys = result_list.keys()
+    for k in keys:
+        result_list[k] = np.array(result_list[k])
         pass
     return result_list

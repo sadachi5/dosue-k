@@ -36,10 +36,7 @@ def fit_one(freq0, dfreq_0=0, rebinfunc=0, outdir='', outfile='', verbose=1,
     freq0_MHz = freq0*1e-6
     
     # additional data [MHz]
-    check_freq = np.array(
-        [18190, 18336, 19120, 19186, 19440, 19478, 19766, 19794, 19818, 20006, 
-         20296, 20302, 20490, 20540, 20892, 21442, 21808, 22522, 22672, 23306, 
-         23808, 23934, 25328, 25352, 25860, 26274, 26346])
+    check_freq = func.check_freq
     
     is_add_data = False
     for _check_freq in check_freq:
@@ -97,18 +94,19 @@ def fit_one(freq0, dfreq_0=0, rebinfunc=0, outdir='', outfile='', verbose=1,
         # W2 is averaged 10 times more than W (W2 measurement time is 10 times more than W.)
         W_add = (W*data_time+W2*data_time2)/(data_time+data_time2)
         
-        if   rebinfunc == 0: freq_rebin_add, W_rebin_add, W_rebin_err_add = func.rebin_func(freq2, W2)
-        elif rebinfunc == 1: freq_rebin_add, W_rebin_add = func.rebin_func_consider_rbw(freq2, W2, method=0)
-        elif rebinfunc == 2: freq_rebin_add, W_rebin_add = freq2, W2
-        elif rebinfunc == 3: freq_rebin_add, W_rebin_add = func.rebin_func_consider_rbw(freq2, W2, method=1)
-        else               : freq_rebin_add, W_rebin_add = freq2, W2
+        # Rebinning to 2kHz bins: W_add (nominal data + additional data)
+        if   rebinfunc == 0: freq_rebin_add, W_rebin_add, W_rebin_err_add = func.rebin_func(freq2, W_add)
+        elif rebinfunc == 1: freq_rebin_add, W_rebin_add, tmp = func.rebin_func_consider_rbw(freq2, W_add, method=0)
+        elif rebinfunc == 2: freq_rebin_add, W_rebin_add = freq2, W_add
+        elif rebinfunc == 3: freq_rebin_add, W_rebin_add, tmp = func.rebin_func_consider_rbw(freq2, W_add, method=1)
+        else               : freq_rebin_add, W_rebin_add = freq2, W_add
         pass
     
-    # Rebinning to 2kHz bins
+    # Rebinning to 2kHz bins: W (nominal data)
     if   rebinfunc == 0: freq_rebin, W_rebin, W_rebin_err = func.rebin_func(freq, W)
-    elif rebinfunc == 1: freq_rebin, W_rebin = func.rebin_func_consider_rbw(freq, W, method=0)
+    elif rebinfunc == 1: freq_rebin, W_rebin, tmp = func.rebin_func_consider_rbw(freq, W, method=0)
     elif rebinfunc == 2: freq_rebin, W_rebin = freq, W
-    elif rebinfunc == 3: freq_rebin, W_rebin = func.rebin_func_consider_rbw(freq, W, method=1)
+    elif rebinfunc == 3: freq_rebin, W_rebin, tmp = func.rebin_func_consider_rbw(freq, W, method=1)
     else               : freq_rebin, W_rebin = freq, W
     if verbose > 0:
         print(f'freq_rebin (size:{len(freq_rebin)} = {freq_rebin}')
@@ -123,6 +121,7 @@ def fit_one(freq0, dfreq_0=0, rebinfunc=0, outdir='', outfile='', verbose=1,
             pass
     elif init_value_set == 3:
         init_values = None
+        init_values_add = None
     else:
         init_values = [1., 1., 1.]
         init_values_add = [1., 1., 1.]
@@ -188,7 +187,7 @@ def fit_one(freq0, dfreq_0=0, rebinfunc=0, outdir='', outfile='', verbose=1,
 
 
 if __name__=='__main__':
-    init_value_set = 0
+    init_value_set = 0 # 0=[1,1,1], 1=[0, mean(P), 0], 2=0 or 1, 3=3 times fit
     # Fit with a rebinned Pin
     # rebinned here before fit
     #input_dir = '/data/ms2840a/result_data'
@@ -226,20 +225,19 @@ if __name__=='__main__':
     # Fit with a rebinned (rebin method=1) raw data
     # rebinned at raw data in get_original_signal
     # Initial values are optimized by using 3 times fits in func.fitting()
-    input_dir = './output/result_data_newrebin1'
-    init_value_set = 3
-    outdatadir = './output/result_data_newrebin1/fit_result4'
-    rebinfunc = 2 # No rebin
+    #input_dir = './output/result_data_newrebin1'
+    #init_value_set = 3
+    #outdatadir = './output/result_data_newrebin1/fit_result4'
+    #rebinfunc = 2 # No rebin
 
     # Fit with a rebinned (rebin method=1) data
     # rebinned at raw data in get_original_signal 
     # by using old y-factor results
     # Initial value set in fit is #2 (choose 1 of 2 sets)
-    #input_dir = './output/result_data_newrebin2'
-    #init_value_set = 2
-    #outdatadir = './output/result_data_newrebin2/fit_result'
-    #rebinfunc = 2 # No rebin
-
+    input_dir = './output/result_data_newrebin2'
+    init_value_set = 3 # 3 times fit
+    outdatadir = './output/result_data_newrebin2/fit_result'
+    rebinfunc = 3 # rebin here by using rebin method=1
 
 
     freq_min = 18. # GHz

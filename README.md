@@ -40,6 +40,9 @@ yfactorデータからNEPを求めた
 get\_original\_signal.ipynb
 ----------------
 スペアナ出力(output)から元信号(input)を再構成する
+--> 時間がかかるので get\_original\_signal.py を作成して、
+    get\_original\_signal.sh で 2GHz ずつ job を作って
+    並列で計算することにした
 
 get\_p\_local\_hide.py
 ----------------
@@ -74,6 +77,11 @@ inputデータのフィッティング
 --> 時間がかかるので peak\_search.py を作成して、 
     peak\_search.sh で 1GHz ずつ job を作って
     並列で計算することにした。
+ - result\_data\_newrebin1/fit\_result4 では
+   2.5483924e+10 Hz の fit で P\_err が Nan になって 
+   (fit がうまくいかない) 問題であった
+ - peak\_search\_one.py は確認用に指定した周波数が含まれる
+   2MHz のスパンだけ fit するスクリプト 
 
 plot\_temperature.ipynb
 ----------------
@@ -166,4 +174,21 @@ yfactor\_plot.ipynb
 	- quick\_plot の output data からリミットの図をプロット
 
 null sample の表示は get\_Neff.py に書いてあるので、 null sample を使いたいときはそれを参照する良い
+
+
+# Versions
+
+result\_data\_newrebin1
+------------------------
+rebin to 2kHz を y-factor, get\_original\_signal.py でおこなった
+(y-factor での 300K の温度は一定で、厳密には正しくない)
+
+- fit\_result4
+    - rebinfunc=2 (No rebin), init\_value\_set=3 (3回 fit をしてうまく fit を収束させる)
+    - 25.483924 GHz のみ fit が失敗して nan 値が P\_err に入った
+    - fit\_script.py で nan が出たら、 init value を P=1 にして再 fit するようにしたら、nan がなくなった
+    - その結果を fit\_result4/start\_25.481750GHz.csv に反映
+        - 修正前) 25483924000.0,-1.1709555794540472e-25,1.899894487002748e-18,9.084085768799774e-27,,,,1.1095077700758385,True
+        - 修正後) 25483924000.0,-1.17095762e-25,1.8998945e-18,-5.31907781e-25,4.34419251e-26,4.78037268e-21,1.46775e-19,1.10950777,True
+    - Bug: peak\_search.py で rebin をしないのだが、additional data があるときに、W1+W2 = W\_add ではなく、W1 に置き換えてしまっていた
 

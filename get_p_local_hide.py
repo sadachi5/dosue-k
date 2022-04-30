@@ -55,10 +55,16 @@ if __name__ == "__main__":
     #outdir_add= ''
 
     # Fit result with rebinned data (rebinmethod=1)
-    indir     = './output/result_data_newrebin1/fit_result2'
-    indir_add = './output/result_data_newrebin1/fit_result2/after_add'
-    outdir    = './output/result_data_newrebin1/signal_p_local2'
-    outdir_add= './output/result_data_newrebin1/signal_p_local2/after_add'
+    #indir     = './output/result_data_newrebin1/fit_result4'
+    #indir_add = './output/result_data_newrebin1/fit_result4/after_add'
+    #outdir    = './output/result_data_newrebin1/signal_p_local4'
+    #outdir_add= './output/result_data_newrebin1/signal_p_local4/after_add'
+
+    # Fit result with newrebin2 (rebinmethod=1, rebin after get_orginal_signal)
+    indir     = './output/result_data_newrebin2/fit_result'
+    indir_add = './output/result_data_newrebin2/fit_result/after_add'
+    outdir    = './output/result_data_newrebin2/signal_p_local'
+    outdir_add= './output/result_data_newrebin2/signal_p_local/after_add'
 
     if not os.path.isdir(outdir):
         os.makedirs(outdir)
