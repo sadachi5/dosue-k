@@ -153,11 +153,11 @@ yfactor\_plot.ipynb
 
  1. yfactor\_analysis.ipynb
 	ゲイン、ノイズの推定
- 2. get\_original\_signal.ipynb
+ 2. get\_original\_signal.ipynb or (get\_original\_signal.py & get\_original\_signal.sh)
 	(今は追加測定のみになっている)
 	- input信号強度の推定
 	- P\_in を求める (Trx を引いて、G で割る)
- 4. peak\_search.ipynb
+ 4. peak\_search.ipynb or (peak\_search.py & peak\_search.sh)
 	(今は追加測定のみになっている)
 	- input信号(追加測定を含む)をフィッティング
  5. beam width 関係の見積もり
@@ -178,10 +178,23 @@ null sample の表示は get\_Neff.py に書いてあるので、 null sample �
 
 # Versions
 
+result\_data
+--------------
+rebin to 2kHz を peak\_search.py の中で fit の前におこなった
+- rebinfunc = 0: function.rebin_func(): Kotaka's wrong benning
+
+result\_data\_newrebin
+------------------------
+rebin to 2kHz を peak\_search.py の中で fit の前におこなった
+- rebinfunc = 1: function.rebin_func_consider_rbw()
+- rebinmethod = 0 in function.rebin_func_consider_rbw(): consider bin edges of the original benning
+
 result\_data\_newrebin1
 ------------------------
 rebin to 2kHz を y-factor, get\_original\_signal.py でおこなった
 (y-factor での 300K の温度は一定で、厳密には正しくない)
+- rebinfunc = 1: function.rebin_func_consider_rbw()
+- rebinmethod = 1 in function.rebin_func_consider_rbw(): cosider only bin center of the original benning
 
 - fit\_result4
     - rebinfunc=2 (No rebin), init\_value\_set=3 (3回 fit をしてうまく fit を収束させる)
@@ -192,3 +205,9 @@ rebin to 2kHz を y-factor, get\_original\_signal.py でおこなった
         - 修正後) 25483924000.0,-1.17095762e-25,1.8998945e-18,-5.31907781e-25,4.34419251e-26,4.78037268e-21,1.46775e-19,1.10950777,True
     - Bug: peak\_search.py で rebin をしないのだが、additional data があるときに、W1+W2 = W\_add ではなく、W1 に置き換えてしまっていた
 
+result\_data\_newrebin2
+------------------------
+rebin to 2kHz を peak\_search.py の中で fit の前におこなった
+- rebinfunc = 1: function.rebin_func_consider_rbw()
+- rebinmethod = 1 in function.rebin_func_consider_rbw(): cosider only bin center of the original benning
+** これが paper で最終的に掲載した方法 **

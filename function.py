@@ -132,9 +132,9 @@ def rebin_func_consider_rbw(freq, data, rebin=binwidth, rbw=rbw, method=0, verbo
         rebin_x2 = rebin_x + rebin/2. # upper edge
 
         if   method == 0: 
-            in_range = np.where((freq2 > rebin_x1) & (freq1 < rebin_x2)) # Check lower edge and upper edeg
+            in_range = np.where((freq2 > rebin_x1) & (freq1 < rebin_x2)) # Check lower edge and upper edge (consider bin edges of the original binning)
         elif method == 1:
-            in_range = np.where((freq >= rebin_x1) & (freq < rebin_x2)) # Check lower edge and upper edeg
+            in_range = np.where((freq >= rebin_x1) & (freq < rebin_x2)) # Check lower edge and upper edge (consider only bin centers of the original binning)
             pass
         if verbose > 0: print_list(in_range, 'in_range')
 
