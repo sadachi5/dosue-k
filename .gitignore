@@ -134,6 +134,7 @@ aho
 aho*
 .*.swp
 *~
+\#*\#
 
 # Outputs
 plot/
